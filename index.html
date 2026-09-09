@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>操作記錄儀</title>
+  <title>代號鳶 - 操作記錄儀</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -25,63 +25,73 @@
 
     .table-container { overflow-x: auto; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; background-color: #ebd3b0; }
-    th, td { border: 1px solid #c8a882; text-align: center; padding: 8px 4px; min-width: 60px; font-size: 14px; }
+    th, td { border: 1px solid #c8a882; text-align: center; padding: 4px; min-width: 65px; font-size: 13px; }
 
-    select.agent-select {
-      width: 90%; padding: 4px; border: 1px solid #b5926c; border-radius: 4px; background-color: #f7e3c8; color: #5c4033;
-    }
-
-    .round-header { background-color: #e5c49b; font-weight: bold; width: 70px; }
+    .round-header { background-color: #e5c49b; font-weight: bold; width: 60px; }
     tbody tr:nth-child(even) { background-color: #f0dbbe; }
 
-    /* 可點擊的儲存格格樣式 */
-    .cell-btn {
-      width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;
+    .agent-header-btn {
+      width: 100%; height: 50px; border: 1px solid #b5926c; background: #f7e3c8;
+      border-radius: 6px; cursor: pointer; display: flex; align-items: center; 
+      justify-content: center; padding: 4px; box-sizing: border-box;
+      font-size: 14px; font-weight: bold; color: #5c4033; word-break: break-all;
     }
 
-    /* 按鈕與功能鍵 */
+    /* 單元格樣式 */
+    .cell-btn {
+      width: 100%; min-height: 40px; border: none; background: transparent; cursor: pointer;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 2px; font-size: 12px; font-weight: bold; padding: 2px;
+    }
+
     .btn-delete { background: none; border: none; color: #a66060; cursor: pointer; font-size: 16px; }
     .actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
     .btn-add { background-color: #f7d5a3; border: 2px solid #c89c68; border-radius: 20px; padding: 8px 24px; font-weight: bold; color: #5c4033; cursor: pointer; }
     .tool-links { display: flex; gap: 20px; font-size: 14px; color: #7a5c43; }
     .tool-links span { cursor: pointer; text-decoration: underline; }
 
-    /* --- 彈窗 (Modal) 樣式 --- */
+    /* 彈窗樣式 */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: flex-end;
+      z-index: 999;
     }
     .modal-overlay.active { display: flex; }
 
     .modal-content {
       background: #fff; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0;
-      padding: 20px; box-sizing: border-box; animation: slideUp 0.2s ease-out;
+      padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto;
     }
 
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-    .modal-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+    .modal-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 12px; }
     .modal-close { cursor: pointer; font-size: 18px; color: #999; }
-    .modal-subtitle { font-size: 12px; color: #666; margin-bottom: 15px; }
 
-    /* 9個選項網格 */
-    .options-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
-    .opt-btn {
-      border: 1px solid #ccc; background: #f9f9f9; padding: 8px; border-radius: 6px;
-      font-size: 14px; cursor: pointer; text-align: center;
+    /* 1~9 個順序格子網格 */
+    .slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+    .slot-item {
+      border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 8px 4px;
+      text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center;
     }
-    .opt-btn.selected { border-color: #e6a23c; background-color: #fdf6ec; color: #e6a23c; font-weight: bold; }
+    .slot-item.active { border-color: #e6a23c; background-color: #fdf6ec; }
+    .slot-num { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .slot-val { font-size: 14px; font-weight: bold; color: #333; min-height: 20px; }
 
-    /* 背景顏色選擇 */
+    /* 符號選擇區 */
+    .symbol-selector {
+      border-top: 1px solid #eee; padding-top: 12px; margin-top: 10px;
+    }
+    .symbols-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    .sym-btn {
+      border: 1px solid #ddd; background: #fff; padding: 10px; border-radius: 6px;
+      font-size: 15px; font-weight: bold; cursor: pointer; text-align: center;
+    }
+    .sym-btn.selected { border-color: #e6a23c; background-color: #e6a23c; color: #fff; }
+
     .color-section { margin: 15px 0; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-    .color-opt { width: 20px; height: 20px; border-radius: 50%; display: inline-block; cursor: pointer; border: 2px solid transparent; }
+    .color-opt { width: 22px; height: 22px; border-radius: 50%; display: inline-block; cursor: pointer; border: 2px solid transparent; }
     .color-opt.selected { border-color: #333; }
 
-    .btn-confirm {
-      width: 100%; background: #f5a623; color: white; border: none; padding: 12px;
-      border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
-    }
+    .btn-confirm { width: 100%; background: #f5a623; color: white; border: none; padding: 12px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -94,11 +104,11 @@
       <thead>
         <tr>
           <th class="round-header">回合</th>
-          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
-          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
-          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
-          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
-          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
           <th style="border:none; background:transparent; width: 20px;"></th>
         </tr>
       </thead>
@@ -118,16 +128,20 @@
 <div class="modal-overlay" id="optionModal">
   <div class="modal-content">
     <div class="modal-header">
-      <span>操作選擇</span>
-      <span class="modal-close" onclick="closeModal()">✕</span>
+      <span>操作內容選擇</span>
+      <span class="modal-close" onclick="closeOptionModal()">✕</span>
     </div>
-    <div class="modal-subtitle">一回合單個密探最多可選擇4個操作，其餘請留空</div>
+    <div style="font-size: 12px; color: #666; margin-bottom: 10px;">點擊下方 1~9 個空格，再選擇對應的操作：</div>
 
-    <!-- 選擇按鈕 (A, ↑, ↓, 圈等) -->
-    <div class="options-grid" id="optionsGrid"></div>
-    <div style="font-size: 12px; color: #888;" id="selectedCount">已選擇: 0 / 4</div>
+    <!-- 1~9 格子 -->
+    <div class="slots-grid" id="slotsGrid"></div>
 
-    <!-- 背景色選擇 -->
+    <!-- 符號選擇面板 -->
+    <div class="symbol-selector">
+      <div style="font-size: 12px; font-weight: bold; color: #5c4033;" id="currentSlotLabel">選擇位置 1 的操作：</div>
+      <div class="symbols-grid" id="symbolsGrid"></div>
+    </div>
+
     <div class="color-section">
       <span>背景色：</span>
       <span class="color-opt selected" style="background:#ffffff;" onclick="selectColor('', this)"></span>
@@ -143,23 +157,25 @@
 
 <script>
   let roundCount = 0;
-  let currentTargetCell = null; // 當前正在編輯的表格格子
-  let tempSelections = [];
+  let currentTargetCell = null;
+  let activeSlotIndex = 0; // 當前選中的是第幾個空格 (0~8)
+  let slotValues = Array(9).fill(''); // 儲存 9 個空格各自的符號
   let tempColor = '';
 
-  // 可供選擇的操作選項列表
-  const availableOptions = ['A', '↑', '↓', '圈', '技能', '普攻', '防禦', '隊長', '退場'];
+  // 選擇符號選單
+  const availableSymbols = ['清除', 'A', '↑', '↓', '圈', '技能', '普攻', '防禦'];
 
   function init() {
     for (let i = 0; i < 3; i++) addRound();
-    renderModalOptions();
+    renderSymbolsGrid();
   }
 
-  function renderModalOptions() {
-    const grid = document.getElementById('optionsGrid');
-    grid.innerHTML = availableOptions.map((opt, i) => 
-      `<button class="opt-btn" onclick="toggleOption('${opt}', this)">${i+1}. ${opt}</button>`
-    ).join('');
+  function setAgentName(btn) {
+    const currentName = btn.innerText.includes("請輸入") ? "" : btn.innerText;
+    const inputName = prompt("請輸入密探名字：", currentName);
+    if (inputName !== null) {
+      btn.innerHTML = inputName.trim() === "" ? "請輸入<br>密探" : inputName.trim();
+    }
   }
 
   function addRound() {
@@ -168,39 +184,72 @@
     const tr = document.createElement('tr');
     let cellsHtml = '';
     for (let i = 0; i < 5; i++) {
-      cellsHtml += `<td><button class="cell-btn" onclick="openModal(this)"></button></td>`;
+      cellsHtml += `<td><button class="cell-btn" onclick="openOptionModal(this)"></button></td>`;
     }
     tr.innerHTML = `<td class="round-header">${roundCount}回合</td>` + cellsHtml + 
       `<td style="border:none; background:transparent;"><button class="btn-delete" onclick="deleteRow(this)">🗑️</button></td>`;
     tbody.appendChild(tr);
   }
 
-  function openModal(btn) {
-    currentTargetCell = btn;
-    // 讀取原本的數據
-    tempSelections = btn.dataset.values ? JSON.parse(btn.dataset.values) : [];
-    tempColor = btn.dataset.color || '';
+  // 渲染 1~9 個空格
+  function renderSlotsGrid() {
+    const grid = document.getElementById('slotsGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const val = slotValues[i] || '請選擇';
+      const isActive = i === activeSlotIndex ? 'active' : '';
+      grid.innerHTML += `
+        <div class="slot-item ${isActive}" onclick="setActiveSlot(${i})">
+          <div class="slot-num">${i + 1}</div>
+          <div class="slot-val">${val}</div>
+        </div>
+      `;
+    }
+    document.getElementById('currentSlotLabel').innerText = `選擇位置 ${activeSlotIndex + 1} 的操作：`;
+    updateSymbolButtonsUI();
+  }
 
-    updateModalUI();
+  // 渲染符號選擇按鈕
+  function renderSymbolsGrid() {
+    const grid = document.getElementById('symbolsGrid');
+    grid.innerHTML = availableSymbols.map(sym => `
+      <button class="sym-btn" onclick="selectSymbol('${sym}')">${sym}</button>
+    `).join('');
+  }
+
+  function setActiveSlot(index) {
+    activeSlotIndex = index;
+    renderSlotsGrid();
+  }
+
+  function selectSymbol(sym) {
+    if (sym === '清除') {
+      slotValues[activeSlotIndex] = '';
+    } else {
+      slotValues[activeSlotIndex] = sym;
+    }
+    renderSlotsGrid();
+  }
+
+  function updateSymbolButtonsUI() {
+    const currentVal = slotValues[activeSlotIndex];
+    document.querySelectorAll('.sym-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.innerText === currentVal);
+    });
+  }
+
+  function openOptionModal(btn) {
+    currentTargetCell = btn;
+    slotValues = btn.dataset.slots ? JSON.parse(btn.dataset.slots) : Array(9).fill('');
+    tempColor = btn.dataset.color || '';
+    activeSlotIndex = 0;
+    
+    renderSlotsGrid();
     document.getElementById('optionModal').classList.add('active');
   }
 
-  function closeModal() {
+  function closeOptionModal() {
     document.getElementById('optionModal').classList.remove('active');
-  }
-
-  function toggleOption(val, el) {
-    const index = tempSelections.indexOf(val);
-    if (index > -1) {
-      tempSelections.splice(index, 1);
-    } else {
-      if (tempSelections.length >= 4) {
-        alert("最多只能選擇 4 個操作！");
-        return;
-      }
-      tempSelections.push(val);
-    }
-    updateModalUI();
   }
 
   function selectColor(color, el) {
@@ -209,24 +258,17 @@
     el.classList.add('selected');
   }
 
-  function updateModalUI() {
-    document.querySelectorAll('.opt-btn').forEach(btn => {
-      const optVal = btn.innerText.split('. ')[1];
-      btn.classList.toggle('selected', tempSelections.includes(optVal));
-    });
-    document.getElementById('selectedCount').innerText = `已選擇: ${tempSelections.length} / 4`;
-  }
-
   function saveCellData() {
     if (currentTargetCell) {
-      currentTargetCell.dataset.values = JSON.stringify(tempSelections);
+      currentTargetCell.dataset.slots = JSON.stringify(slotValues);
       currentTargetCell.dataset.color = tempColor;
-      
-      // 更新格子的顯示文字與背景顏色
-      currentTargetCell.innerText = tempSelections.join(' ');
+
+      // 提取非空的內容顯示在表格中
+      const displayVals = slotValues.filter(v => v !== '');
+      currentTargetCell.innerText = displayVals.join(' ');
       currentTargetCell.parentElement.style.backgroundColor = tempColor || 'transparent';
     }
-    closeModal();
+    closeOptionModal();
   }
 
   function deleteRow(btn) {
@@ -246,7 +288,7 @@
     if (confirm("確定要清空嗎？")) {
       document.querySelectorAll('.cell-btn').forEach(btn => {
         btn.innerText = '';
-        btn.dataset.values = '';
+        btn.dataset.slots = '';
         btn.dataset.color = '';
         btn.parentElement.style.backgroundColor = 'transparent';
       });
