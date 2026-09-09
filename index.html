@@ -37,11 +37,10 @@
       font-size: 14px; font-weight: bold; color: #5c4033; word-break: break-all;
     }
 
-    /* 單元格樣式 */
     .cell-btn {
       width: 100%; min-height: 40px; border: none; background: transparent; cursor: pointer;
       display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-      gap: 2px; font-size: 12px; font-weight: bold; padding: 2px;
+      gap: 4px; font-size: 12px; font-weight: bold; padding: 2px;
     }
 
     .btn-delete { background: none; border: none; color: #a66060; cursor: pointer; font-size: 16px; }
@@ -66,7 +65,6 @@
     .modal-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 12px; }
     .modal-close { cursor: pointer; font-size: 18px; color: #999; }
 
-    /* 1~9 個順序格子網格 */
     .slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
     .slot-item {
       border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 8px 4px;
@@ -76,20 +74,25 @@
     .slot-num { font-size: 11px; color: #888; margin-bottom: 4px; }
     .slot-val { font-size: 14px; font-weight: bold; color: #333; min-height: 20px; }
 
-    /* 符號選擇區 */
     .symbol-selector {
       border-top: 1px solid #eee; padding-top: 12px; margin-top: 10px;
     }
-    .symbols-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    /* 調整符號選單改為 5 個橫排可適應的欄位 */
+    .symbols-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
     .sym-btn {
-      border: 1px solid #ddd; background: #fff; padding: 10px; border-radius: 6px;
-      font-size: 15px; font-weight: bold; cursor: pointer; text-align: center;
+      border: 1px solid #ddd; background: #fff; padding: 10px 4px; border-radius: 6px;
+      font-size: 14px; font-weight: bold; cursor: pointer; text-align: center;
     }
     .sym-btn.selected { border-color: #e6a23c; background-color: #e6a23c; color: #fff; }
 
-    .color-section { margin: 15px 0; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-    .color-opt { width: 22px; height: 22px; border-radius: 50%; display: inline-block; cursor: pointer; border: 2px solid transparent; }
-    .color-opt.selected { border-color: #333; }
+    .color-section { margin: 15px 0; font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .color-opt { 
+      width: 24px; height: 24px; border-radius: 50%; display: inline-block; 
+      cursor: pointer; border: 2px solid #ddd; box-sizing: border-box;
+      transition: transform 0.1s;
+    }
+    .color-opt:hover { transform: scale(1.1); }
+    .color-opt.selected { border-color: #333; transform: scale(1.15); box-shadow: 0 0 4px rgba(0,0,0,0.3); }
 
     .btn-confirm { width: 100%; background: #f5a623; color: white; border: none; padding: 12px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
   </style>
@@ -133,10 +136,8 @@
     </div>
     <div style="font-size: 12px; color: #666; margin-bottom: 10px;">點擊下方 1~9 個空格，再選擇對應的操作：</div>
 
-    <!-- 1~9 格子 -->
     <div class="slots-grid" id="slotsGrid"></div>
 
-    <!-- 符號選擇面板 -->
     <div class="symbol-selector">
       <div style="font-size: 12px; font-weight: bold; color: #5c4033;" id="currentSlotLabel">選擇位置 1 的操作：</div>
       <div class="symbols-grid" id="symbolsGrid"></div>
@@ -144,11 +145,12 @@
 
     <div class="color-section">
       <span>背景色：</span>
-      <span class="color-opt selected" style="background:#ffffff;" onclick="selectColor('', this)"></span>
-      <span class="color-opt" style="background:#ffeb3b;" onclick="selectColor('#ffeb3b', this)"></span>
-      <span class="color-opt" style="background:#ff4081;" onclick="selectColor('#ff4081', this)"></span>
-      <span class="color-opt" style="background:#b2ff59;" onclick="selectColor('#b2ff59', this)"></span>
-      <span class="color-opt" style="background:#64b5f6;" onclick="selectColor('#64b5f6', this)"></span>
+      <span class="color-opt selected" style="background:#ffffff;" title="無色" onclick="selectColor('', this)"></span>
+      <span class="color-opt" style="background:#fce4ec;" title="櫻花淡粉" onclick="selectColor('#fce4ec', this)"></span>
+      <span class="color-opt" style="background:#f3e5f5;" title="丁香淡紫" onclick="selectColor('#f3e5f5', this)"></span>
+      <span class="color-opt" style="background:#e8f5e9;" title="薄荷淡綠" onclick="selectColor('#e8f5e9', this)"></span>
+      <span class="color-opt" style="background:#e0f7fa;" title="亮冰青色" onclick="selectColor('#e0f7fa', this)"></span>
+      <span class="color-opt" style="background:#e3f2fd;" title="寶寶藍" onclick="selectColor('#e3f2fd', this)"></span>
     </div>
 
     <button class="btn-confirm" onclick="saveCellData()">確認</button>
@@ -158,12 +160,12 @@
 <script>
   let roundCount = 0;
   let currentTargetCell = null;
-  let activeSlotIndex = 0; // 當前選中的是第幾個空格 (0~8)
-  let slotValues = Array(9).fill(''); // 儲存 9 個空格各自的符號
+  let activeSlotIndex = 0;
+  let slotValues = Array(9).fill('');
   let tempColor = '';
 
-  // 選擇符號選單
-  const availableSymbols = ['清除', 'A', '↑', '↓', '圈', '技能', '普攻', '防禦'];
+  // 僅保留需要的 5 個選項
+  const availableSymbols = ['清除', 'A', '↑', '↓', '圈'];
 
   function init() {
     for (let i = 0; i < 3; i++) addRound();
@@ -191,7 +193,6 @@
     tbody.appendChild(tr);
   }
 
-  // 渲染 1~9 個空格
   function renderSlotsGrid() {
     const grid = document.getElementById('slotsGrid');
     grid.innerHTML = '';
@@ -209,7 +210,6 @@
     updateSymbolButtonsUI();
   }
 
-  // 渲染符號選擇按鈕
   function renderSymbolsGrid() {
     const grid = document.getElementById('symbolsGrid');
     grid.innerHTML = availableSymbols.map(sym => `
@@ -244,6 +244,15 @@
     tempColor = btn.dataset.color || '';
     activeSlotIndex = 0;
     
+    document.querySelectorAll('.color-opt').forEach(c => {
+      const bg = c.getAttribute('onclick');
+      if ((tempColor === '' && bg.includes("''")) || (tempColor && bg.includes(tempColor))) {
+        c.classList.add('selected');
+      } else {
+        c.classList.remove('selected');
+      }
+    });
+
     renderSlotsGrid();
     document.getElementById('optionModal').classList.add('active');
   }
@@ -263,8 +272,14 @@
       currentTargetCell.dataset.slots = JSON.stringify(slotValues);
       currentTargetCell.dataset.color = tempColor;
 
-      // 提取非空的內容顯示在表格中
-      const displayVals = slotValues.filter(v => v !== '');
+      // 自動組合「空格數字 + 符號」（例如：5A 6A）
+      const displayVals = [];
+      slotValues.forEach((val, idx) => {
+        if (val !== '') {
+          displayVals.push(`${idx + 1}${val}`);
+        }
+      });
+
       currentTargetCell.innerText = displayVals.join(' ');
       currentTargetCell.parentElement.style.backgroundColor = tempColor || 'transparent';
     }
