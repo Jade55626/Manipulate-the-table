@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作記錄儀</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f7f3ed;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background-color: #fbf8f3;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .table-container { overflow-x: auto; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; background-color: #ebd3b0; }
+    th, td { border: 1px solid #c8a882; text-align: center; padding: 8px 4px; min-width: 60px; font-size: 14px; }
+
+    select.agent-select {
+      width: 90%; padding: 4px; border: 1px solid #b5926c; border-radius: 4px; background-color: #f7e3c8; color: #5c4033;
+    }
+
+    .round-header { background-color: #e5c49b; font-weight: bold; width: 70px; }
+    tbody tr:nth-child(even) { background-color: #f0dbbe; }
+
+    /* 可點擊的儲存格格樣式 */
+    .cell-btn {
+      width: 100%; height: 35px; border: none; background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;
+    }
+
+    /* 按鈕與功能鍵 */
+    .btn-delete { background: none; border: none; color: #a66060; cursor: pointer; font-size: 16px; }
+    .actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .btn-add { background-color: #f7d5a3; border: 2px solid #c89c68; border-radius: 20px; padding: 8px 24px; font-weight: bold; color: #5c4033; cursor: pointer; }
+    .tool-links { display: flex; gap: 20px; font-size: 14px; color: #7a5c43; }
+    .tool-links span { cursor: pointer; text-decoration: underline; }
+
+    /* --- 彈窗 (Modal) 樣式 --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: flex-end;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-content {
+      background: #fff; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0;
+      padding: 20px; box-sizing: border-box; animation: slideUp 0.2s ease-out;
+    }
+
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .modal-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+    .modal-close { cursor: pointer; font-size: 18px; color: #999; }
+    .modal-subtitle { font-size: 12px; color: #666; margin-bottom: 15px; }
+
+    /* 9個選項網格 */
+    .options-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .opt-btn {
+      border: 1px solid #ccc; background: #f9f9f9; padding: 8px; border-radius: 6px;
+      font-size: 14px; cursor: pointer; text-align: center;
+    }
+    .opt-btn.selected { border-color: #e6a23c; background-color: #fdf6ec; color: #e6a23c; font-weight: bold; }
+
+    /* 背景顏色選擇 */
+    .color-section { margin: 15px 0; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+    .color-opt { width: 20px; height: 20px; border-radius: 50%; display: inline-block; cursor: pointer; border: 2px solid transparent; }
+    .color-opt.selected { border-color: #333; }
+
+    .btn-confirm {
+      width: 100%; background: #f5a623; color: white; border: none; padding: 12px;
+      border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>代號鳶 - 操作記錄儀</h2>
+
+  <div class="table-container">
+    <table id="recordTable">
+      <thead>
+        <tr>
+          <th class="round-header">回合</th>
+          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
+          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
+          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
+          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
+          <th><select class="agent-select"><option>請選擇密探</option><option>楊修</option><option>阿蓮</option></select></th>
+          <th style="border:none; background:transparent; width: 20px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button class="btn-add" onclick="addRound()">添加回合</button>
+    <div class="tool-links">
+      <span onclick="clearAll()">全部清除</span>
+    </div>
+  </div>
+</div>
+
+<!-- 操作選擇彈窗 -->
+<div class="modal-overlay" id="optionModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>操作選擇</span>
+      <span class="modal-close" onclick="closeModal()">✕</span>
+    </div>
+    <div class="modal-subtitle">一回合單個密探最多可選擇4個操作，其餘請留空</div>
+
+    <!-- 選擇按鈕 (A, ↑, ↓, 圈等) -->
+    <div class="options-grid" id="optionsGrid"></div>
+    <div style="font-size: 12px; color: #888;" id="selectedCount">已選擇: 0 / 4</div>
+
+    <!-- 背景色選擇 -->
+    <div class="color-section">
+      <span>背景色：</span>
+      <span class="color-opt selected" style="background:#ffffff;" onclick="selectColor('', this)"></span>
+      <span class="color-opt" style="background:#ffeb3b;" onclick="selectColor('#ffeb3b', this)"></span>
+      <span class="color-opt" style="background:#ff4081;" onclick="selectColor('#ff4081', this)"></span>
+      <span class="color-opt" style="background:#b2ff59;" onclick="selectColor('#b2ff59', this)"></span>
+      <span class="color-opt" style="background:#64b5f6;" onclick="selectColor('#64b5f6', this)"></span>
+    </div>
+
+    <button class="btn-confirm" onclick="saveCellData()">確認</button>
+  </div>
+</div>
+
+<script>
+  let roundCount = 0;
+  let currentTargetCell = null; // 當前正在編輯的表格格子
+  let tempSelections = [];
+  let tempColor = '';
+
+  // 可供選擇的操作選項列表
+  const availableOptions = ['A', '↑', '↓', '圈', '技能', '普攻', '防禦', '隊長', '退場'];
+
+  function init() {
+    for (let i = 0; i < 3; i++) addRound();
+    renderModalOptions();
+  }
+
+  function renderModalOptions() {
+    const grid = document.getElementById('optionsGrid');
+    grid.innerHTML = availableOptions.map((opt, i) => 
+      `<button class="opt-btn" onclick="toggleOption('${opt}', this)">${i+1}. ${opt}</button>`
+    ).join('');
+  }
+
+  function addRound() {
+    roundCount++;
+    const tbody = document.getElementById('tableBody');
+    const tr = document.createElement('tr');
+    let cellsHtml = '';
+    for (let i = 0; i < 5; i++) {
+      cellsHtml += `<td><button class="cell-btn" onclick="openModal(this)"></button></td>`;
+    }
+    tr.innerHTML = `<td class="round-header">${roundCount}回合</td>` + cellsHtml + 
+      `<td style="border:none; background:transparent;"><button class="btn-delete" onclick="deleteRow(this)">🗑️</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  function openModal(btn) {
+    currentTargetCell = btn;
+    // 讀取原本的數據
+    tempSelections = btn.dataset.values ? JSON.parse(btn.dataset.values) : [];
+    tempColor = btn.dataset.color || '';
+
+    updateModalUI();
+    document.getElementById('optionModal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('optionModal').classList.remove('active');
+  }
+
+  function toggleOption(val, el) {
+    const index = tempSelections.indexOf(val);
+    if (index > -1) {
+      tempSelections.splice(index, 1);
+    } else {
+      if (tempSelections.length >= 4) {
+        alert("最多只能選擇 4 個操作！");
+        return;
+      }
+      tempSelections.push(val);
+    }
+    updateModalUI();
+  }
+
+  function selectColor(color, el) {
+    tempColor = color;
+    document.querySelectorAll('.color-opt').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function updateModalUI() {
+    document.querySelectorAll('.opt-btn').forEach(btn => {
+      const optVal = btn.innerText.split('. ')[1];
+      btn.classList.toggle('selected', tempSelections.includes(optVal));
+    });
+    document.getElementById('selectedCount').innerText = `已選擇: ${tempSelections.length} / 4`;
+  }
+
+  function saveCellData() {
+    if (currentTargetCell) {
+      currentTargetCell.dataset.values = JSON.stringify(tempSelections);
+      currentTargetCell.dataset.color = tempColor;
+      
+      // 更新格子的顯示文字與背景顏色
+      currentTargetCell.innerText = tempSelections.join(' ');
+      currentTargetCell.parentElement.style.backgroundColor = tempColor || 'transparent';
+    }
+    closeModal();
+  }
+
+  function deleteRow(btn) {
+    btn.closest('tr').remove();
+    reindexRounds();
+  }
+
+  function reindexRounds() {
+    roundCount = 0;
+    document.querySelectorAll('#tableBody tr').forEach(row => {
+      roundCount++;
+      row.querySelector('.round-header').innerText = `${roundCount}回合`;
+    });
+  }
+
+  function clearAll() {
+    if (confirm("確定要清空嗎？")) {
+      document.querySelectorAll('.cell-btn').forEach(btn => {
+        btn.innerText = '';
+        btn.dataset.values = '';
+        btn.dataset.color = '';
+        btn.parentElement.style.backgroundColor = 'transparent';
+      });
+    }
+  }
+
+  window.onload = init;
+</script>
+
+</body>
+</html>
