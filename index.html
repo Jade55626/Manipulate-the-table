@@ -3,11 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>代號鳶 - 操作記錄</title>
-  
-  <!-- 1. 先引入密探資料檔 (agents.js) -->
-  <script src="agents.js"></script>
-
+  <title>代號鳶 - 操作記錄儀</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -27,14 +23,347 @@
       border-radius: 12px;
     }
 
-    .table-container { 
-      overflow-x: auto; 
-      margin-bottom: 20px; 
-    }
+    .table-container { overflow-x: auto; margin-bottom: 20px; }
     
     /* 表格底色與邊框調整 */
     table { 
       width: 100%; 
+      border-collapse: collapse; 
+      background-color: #F3F5F7; 
+      border: 1px solid #C7CDD1;
+    }
+    th, td { 
+      border: 1px solid #C7CDD1; 
+      text-align: center; 
+      padding: 4px; 
+      min-width: 65px; 
+      font-size: 13px; 
+      color: #C7CDD1;
+    }
+
+    .round-header { 
+      background-color: #F3F5F7; 
+      font-weight: bold; 
+      width: 60px; 
+      color: #C7CDD1;
+    }
+    tbody tr:nth-child(even) { background-color: #F3F5F7; }
+
+    .agent-header-btn {
+      width: 100%; height: 50px; 
+      border: 1px solid #C7CDD1; 
+      background: #F3F5F7;
+      border-radius: 6px; cursor: pointer; display: flex; align-items: center; 
+      justify-content: center; padding: 4px; box-sizing: border-box;
+      font-size: 14px; font-weight: bold; color: #C7CDD1; word-break: break-all;
+    }
+
+    .cell-btn {
+      width: 100%; min-height: 40px; border: none; background: transparent; cursor: pointer;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 4px; font-size: 12px; font-weight: bold; padding: 2px;
+      color: #C7CDD1;
+    }
+
+    /* 簡約 SVG 垃圾桶按鈕 */
+    .btn-delete { 
+      background: none; 
+      border: none; 
+      cursor: pointer; 
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #C7CDD1;
+    }
+    .btn-delete:hover { color: #a66060; }
+    .trash-icon {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .btn-add { background-color: #f7d5a3; border: 2px solid #c89c68; border-radius: 20px; padding: 8px 24px; font-weight: bold; color: #5c4033; cursor: pointer; }
+    .tool-links { display: flex; gap: 20px; font-size: 14px; color: #7a5c43; }
+    .tool-links span { cursor: pointer; text-decoration: underline; }
+
+    /* 彈窗樣式 */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: flex-end;
+      z-index: 999;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-content {
+      background: #fff; width: 100%; max-width: 500px; border-radius: 20px 20px 0 0;
+      padding: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto;
+    }
+
+    .modal-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 12px; }
+    .modal-close { cursor: pointer; font-size: 18px; color: #999; }
+
+    .slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+    .slot-item {
+      border: 1px solid #ccc; background: #fafafa; border-radius: 8px; padding: 8px 4px;
+      text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+    }
+    .slot-item.active { border-color: #e6a23c; background-color: #fdf6ec; }
+    .slot-num { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .slot-val { font-size: 14px; font-weight: bold; color: #333; min-height: 20px; }
+
+    .symbol-selector {
+      border-top: 1px solid #eee; padding-top: 12px; margin-top: 10px;
+    }
+    .symbols-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+    .sym-btn {
+      border: 1px solid #ddd; background: #fff; padding: 10px 4px; border-radius: 6px;
+      font-size: 14px; font-weight: bold; cursor: pointer; text-align: center;
+    }
+    .sym-btn.selected { border-color: #e6a23c; background-color: #e6a23c; color: #fff; }
+
+    .color-section { margin: 15px 0; font-size: 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .color-opt { 
+      width: 24px; height: 24px; border-radius: 50%; display: inline-block; 
+      cursor: pointer; border: 2px solid #ddd; box-sizing: border-box;
+      transition: transform 0.1s;
+    }
+    .color-opt:hover { transform: scale(1.1); }
+    .color-opt.selected { border-color: #333; transform: scale(1.15); box-shadow: 0 0 4px rgba(0,0,0,0.3); }
+
+    .btn-confirm { width: 100%; background: #f5a623; color: white; border: none; padding: 12px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>代號鳶 - 操作記錄儀</h2>
+
+  <div class="table-container">
+    <table id="recordTable">
+      <thead>
+        <tr>
+          <th class="round-header">回合</th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th><button class="agent-header-btn" onclick="setAgentName(this)">請輸入<br>密探</button></th>
+          <th style="border:none; background:transparent; width: 24px;"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button class="btn-add" onclick="addRound()">添加回合</button>
+    <div class="tool-links">
+      <span onclick="clearAll()">全部清除</span>
+    </div>
+  </div>
+</div>
+
+<!-- 操作選擇彈窗 -->
+<div class="modal-overlay" id="optionModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>操作內容選擇</span>
+      <span class="modal-close" onclick="closeOptionModal()">✕</span>
+    </div>
+    <div style="font-size: 12px; color: #666; margin-bottom: 10px;">點擊下方 1~9 個空格，再選擇對應的操作：</div>
+
+    <div class="slots-grid" id="slotsGrid"></div>
+
+    <div class="symbol-selector">
+      <div style="font-size: 12px; font-weight: bold; color: #5c4033;" id="currentSlotLabel">選擇位置 1 的操作：</div>
+      <div class="symbols-grid" id="symbolsGrid"></div>
+    </div>
+
+    <div class="color-section">
+      <span>背景色：</span>
+      <span class="color-opt selected" style="background:#ffffff;" title="無色" onclick="selectColor('', this)"></span>
+      <span class="color-opt" style="background:#dcebf7;" title="淡粉藍" onclick="selectColor('#dcebf7', this)"></span>
+      <span class="color-opt" style="background:#fcdada;" title="柔和珊瑚粉" onclick="selectColor('#fcdada', this)"></span>
+      <span class="color-opt" style="background:#d8f3e5;" title="淺薄荷綠" onclick="selectColor('#d8f3e5', this)"></span>
+      <span class="color-opt" style="background:#fff4cc;" title="淡奶油黃" onclick="selectColor('#fff4cc', this)"></span>
+    </div>
+
+    <button class="btn-confirm" onclick="saveCellData()">確認</button>
+  </div>
+</div>
+
+<script>
+  let roundCount = 0;
+  let currentTargetCell = null;
+  let activeSlotIndex = 0;
+  let slotValues = Array(9).fill('');
+  let tempColor = '';
+
+  const availableSymbols = ['清除', 'A', '↑', '↓', '圈'];
+
+  const trashSvg = `
+    <svg class="trash-icon" viewBox="0 0 24 24">
+      <path d="M4 7h16" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12" />
+      <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+    </svg>
+  `;
+
+  function init() {
+    for (let i = 0; i < 3; i++) addRound();
+    renderSymbolsGrid();
+  }
+
+  function setAgentName(btn) {
+    const currentName = btn.innerText.includes("請輸入") ? "" : btn.innerText;
+    const inputName = prompt("請輸入密探名字：", currentName);
+    if (inputName !== null) {
+      btn.innerHTML = inputName.trim() === "" ? "請輸入<br>密探" : inputName.trim();
+    }
+  }
+
+  function addRound() {
+    roundCount++;
+    const tbody = document.getElementById('tableBody');
+    const tr = document.createElement('tr');
+    let cellsHtml = '';
+    for (let i = 0; i < 5; i++) {
+      cellsHtml += `<td><button class="cell-btn" onclick="openOptionModal(this)"></button></td>`;
+    }
+    tr.innerHTML = `<td class="round-header">${roundCount}回合</td>` + cellsHtml + 
+      `<td style="border:none; background:transparent;"><button class="btn-delete" onclick="deleteRow(this)" title="刪除回合">${trashSvg}</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  function renderSlotsGrid() {
+    const grid = document.getElementById('slotsGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const val = slotValues[i] || '請選擇';
+      const isActive = i === activeSlotIndex ? 'active' : '';
+      grid.innerHTML += `
+        <div class="slot-item ${isActive}" onclick="setActiveSlot(${i})">
+          <div class="slot-num">${i + 1}</div>
+          <div class="slot-val">${val}</div>
+        </div>
+      `;
+    }
+    document.getElementById('currentSlotLabel').innerText = `選擇位置 ${activeSlotIndex + 1} 的操作：`;
+    updateSymbolButtonsUI();
+  }
+
+  function renderSymbolsGrid() {
+    const grid = document.getElementById('symbolsGrid');
+    grid.innerHTML = availableSymbols.map(sym => `
+      <button class="sym-btn" onclick="selectSymbol('${sym}')">${sym}</button>
+    `).join('');
+  }
+
+  function setActiveSlot(index) {
+    activeSlotIndex = index;
+    renderSlotsGrid();
+  }
+
+  function selectSymbol(sym) {
+    if (sym === '清除') {
+      slotValues[activeSlotIndex] = '';
+    } else {
+      slotValues[activeSlotIndex] = sym;
+    }
+    renderSlotsGrid();
+  }
+
+  function updateSymbolButtonsUI() {
+    const currentVal = slotValues[activeSlotIndex];
+    document.querySelectorAll('.sym-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.innerText === currentVal);
+    });
+  }
+
+  function openOptionModal(btn) {
+    currentTargetCell = btn;
+    slotValues = btn.dataset.slots ? JSON.parse(btn.dataset.slots) : Array(9).fill('');
+    tempColor = btn.dataset.color || '';
+    activeSlotIndex = 0;
+    
+    document.querySelectorAll('.color-opt').forEach(c => {
+      const bg = c.getAttribute('onclick');
+      if ((tempColor === '' && bg.includes("''")) || (tempColor && bg.includes(tempColor))) {
+        c.classList.add('selected');
+      } else {
+        c.classList.remove('selected');
+      }
+    });
+
+    renderSlotsGrid();
+    document.getElementById('optionModal').classList.add('active');
+  }
+
+  function closeOptionModal() {
+    document.getElementById('optionModal').classList.remove('active');
+  }
+
+  function selectColor(color, el) {
+    tempColor = color;
+    document.querySelectorAll('.color-opt').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function saveCellData() {
+    if (currentTargetCell) {
+      currentTargetCell.dataset.slots = JSON.stringify(slotValues);
+      currentTargetCell.dataset.color = tempColor;
+
+      const displayVals = [];
+      slotValues.forEach((val, idx) => {
+        if (val !== '') {
+          displayVals.push(`${idx + 1}${val}`);
+        }
+      });
+
+      currentTargetCell.innerText = displayVals.join(' ');
+      currentTargetCell.parentElement.style.backgroundColor = tempColor || 'transparent';
+    }
+    closeOptionModal();
+  }
+
+  function deleteRow(btn) {
+    btn.closest('tr').remove();
+    reindexRounds();
+  }
+
+  function reindexRounds() {
+    roundCount = 0;
+    document.querySelectorAll('#tableBody tr').forEach(row => {
+      roundCount++;
+      row.querySelector('.round-header').innerText = `${roundCount}回合`;
+    });
+  }
+
+  function clearAll() {
+    if (confirm("確定要清空嗎？")) {
+      document.querySelectorAll('.cell-btn').forEach(btn => {
+        btn.innerText = '';
+        btn.dataset.slots = '';
+        btn.dataset.color = '';
+        btn.parentElement.style.backgroundColor = 'transparent';
+      });
+    }
+  }
+
+  window.onload = init;
+</script>
+
+</body>
+</html>      width: 100%; 
       border-collapse: collapse; 
       background-color: #F3F5F7; 
       border: 1px solid #C7CDD1;
